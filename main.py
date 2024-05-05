@@ -32,3 +32,7 @@ class weapon:
         self.firing_mode = Firing_Mode
     def change_weapon_state(self):
         pass
+
+def initialize_weapon():
+    pass
+    
