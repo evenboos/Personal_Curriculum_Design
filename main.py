@@ -1,6 +1,6 @@
 import openpyxl
 import json
-
+import gui
 
 class user:
     name = ""
@@ -36,3 +36,4 @@ class weapon:
 def initialize_weapon():
     pass
     
+gui.show_main_window()
