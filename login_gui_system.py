@@ -2,14 +2,19 @@
 from PyQt6 import QtWidgets, QtCore, QtGui
 from player_loader import PlayerLoader
 
-class LoginSystem:
+class LoginSystem(QtCore.QObject):
+    login_success = QtCore.pyqtSignal()  # Define a new signal
+
     def __init__(self):
+        super().__init__()  # Call the init method of the super class
         self.player_loader = PlayerLoader()
         self.player_loader.load_players()
 
     def login(self, username, password):
         if self.player_loader.get_player(username) == password:
+            self.login_success.emit()  # Emit the signal when login is successful
             return True
+        
         return False
 
     def register(self, username, password):
@@ -50,9 +55,9 @@ class RegisterDialog(QtWidgets.QDialog):
         else:
             QtWidgets.QMessageBox.warning(self, 'Register', 'Registration failed.')  # 弹出注册失败的消息框
 
-class MainWindow(QtWidgets.QMainWindow):
+class LoginGuiSystem(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
-        super(MainWindow, self).__init__(parent)
+        super(LoginGuiSystem, self).__init__(parent)
         self.login_system = LoginSystem()
 
         self.username_input = QtWidgets.QLineEdit(self)
@@ -96,6 +101,6 @@ class MainWindow(QtWidgets.QMainWindow):
 if __name__ == '__main__':
     import sys
     app = QtWidgets.QApplication(sys.argv)
-    main = MainWindow()
+    main = LoginGuiSystem()
     main.show()
     sys.exit(app.exec())

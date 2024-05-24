@@ -1,4 +1,6 @@
-import openpyxl
+from PyQt6.QtWidgets import QApplication
+from login_gui_system import LoginGuiSystem
+
 import json
 import gui
 
@@ -36,4 +38,18 @@ class weapon:
 def initialize_weapon():
     pass
     
-gui.show_main_window()
+class MainWin:
+    def __init__(self):
+        self.login_gui_system = LoginGuiSystem()
+        self.login_gui_system.login_system.login_success.connect(self.open_main_window)  # Connect the signal to the slot
+
+    def open_main_window(self):
+        self.login_gui_system.close()  # Close the login window
+        self.main_window = gui.MainWindow()  # Create the main window
+        self.main_window.show()  # Show the main window
+
+if __name__ == '__main__':
+    app = QApplication([])
+    main_win = MainWin()
+    main_win.login_gui_system.show()
+    app.exec()
