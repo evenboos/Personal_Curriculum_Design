@@ -1,71 +1,124 @@
-
-# 导入所需的模块
-from PyQt6 import QtWidgets, QtCore, QtGui  # PyQt6模块用于创建GUI应用程序
-import pandas as pd  # 用于数据处理的模块
+from PyQt6 import QtWidgets, QtCore, QtGui
+import pandas as pd
 import sys
+import qfluentwidgets as qfw
+from PyQt6.QtGui import QIcon
 
-# 创建主窗口类
-class MainWindow(QtWidgets.QMainWindow):
-    def __init__(self, parent=None):  # 初始化方法
-        super(MainWindow, self).__init__(parent)  # 调用父类的初始化方法
-        self.table = QtWidgets.QTableView(self)  # 创建表视图部件
+class MainWindow(qfw.FluentWindow):
+    def __init__(self, parent=None):
+        super(MainWindow, self).__init__(parent=parent)
+        self.resize(900, 700)
+        self.setWindowTitle("PUBG武器管理系统")
+        self.TableEditWidget = Table_Edit_Widget(self)
+        self.addSubInterface(self.TableEditWidget, qfw.FluentIcon.FOLDER, '全用户武器管理系统', qfw.NavigationItemPosition.SCROLL)
 
-        # 读取Excel文件并创建数据模型
-        df = pd.read_excel('your_file.xlsx')  # 从Excel文件中读取数据
-        model = QtGui.QStandardItemModel(self)  # 创建Qt的标准项数据模型
+class Table_Edit_Widget(QtWidgets.QMainWindow):
+    def __init__(self, parent=None):
+        super(Table_Edit_Widget, self).__init__(parent=parent)
+        self.table = qfw.TableView(self)
+        self.resize(800, 450)
+        self.setWindowTitle('全用户武器管理系统')
+        self.setObjectName("TableEditWidget")
 
-        model.setHorizontalHeaderLabels(df.columns)  # 设置数据模型的水平标题标签
-        for i in df.index:  # 遍历数据框的行索引
-            count_j = 0  # 计数器，用于设置列索引
-            for j in df.columns:  # 遍历数据框的列标签
-                item = QtGui.QStandardItem(str(df.at[i, j]))  # 创建Qt标准项对象
-                model.setItem(i, count_j, item)  # 在数据模型中设置项的值
-                count_j += 1  # 计数器加1
+        self.setup_table()
+        self.setup_buttons()
+        self.setup_layout()
 
-        self.table.setModel(model)  # 将数据模型应用到表视图
-        self.table.setSortingEnabled(True)  #启用表格排序
+    def setup_table(self):
+        df = pd.read_excel('your_file.xlsx')
+        model = QtGui.QStandardItemModel(self)
 
-        self.button = QtWidgets.QPushButton('Submit', self)  # 创建按钮部件
-        self.button.clicked.connect(self.submit)  # 连接按钮的点击事件到submit方法
+        model.setHorizontalHeaderLabels(df.columns)
+        for i in df.index:
+            count_j = 0
+            for j in df.columns:
+                item = QtGui.QStandardItem(str(df.at[i, j]))
+                model.setItem(i, count_j, item)
+                count_j += 1
 
-        self.layout = QtWidgets.QVBoxLayout()  # 创建垂直布局管理器
-        self.layout.addWidget(self.table)  # 将表视图部件添加到布局
-        self.layout.addWidget(self.button)  # 将按钮部件添加到布局
-
-        self.widget = QtWidgets.QWidget()  # 创建部件
-        self.widget.setLayout(self.layout)  # 将布局应用到部件
-        # 设置表格的垂直表头不可见
+        self.table.setModel(model)
+        self.table.setSortingEnabled(True)
         self.table.verticalHeader().setVisible(False)
 
-        self.setCentralWidget(self.widget)  # 设置中心部件为自定义部件
+    def setup_buttons(self):
+        self.button = qfw.PrimaryPushButton(qfw.FluentIcon.SAVE, '提交', self)
+        self.button.clicked.connect(self.submit)
 
-    def submit(self):  # 提交数据的方法
-        model = self.table.model()  # 获取表视图的数据模型
-        
+        self.add_row_button = qfw.PrimaryPushButton(qfw.FluentIcon.ADD, '添加行', self)
+        self.add_row_button.clicked.connect(self.add_row)
 
-        data = []  # 创建一个空的数据列表
-        for row in range(model.rowCount()):  # 遍历数据模型的行
-            rowData = []  # 创建一个空的行数据列表
-            for column in range(model.columnCount()):  # 遍历数据模型的列
-                item = model.item(row, column)  # 获取特定位置的项
-                if item is not None:  # 如果项不为空
-                    rowData.append(item.text())  # 将项的文本值添加到行数据列表
+        self.exit_button = qfw.PrimaryPushButton(qfw.FluentIcon.CLOSE, '退出', self)
+        self.exit_button.clicked.connect(self.exit_program)
+
+    def setup_layout(self):
+        self.layout = QtWidgets.QVBoxLayout()
+        self.layout.addWidget(self.table)
+        self.layout.addWidget(self.button)
+        self.layout.addWidget(self.add_row_button)
+        self.layout.addWidget(self.exit_button)
+
+        self.widget = QtWidgets.QWidget()
+        self.widget.setLayout(self.layout)
+
+        self.setCentralWidget(self.widget)
+
+    def contextMenuEvent(self, event):
+        context_menu = QtWidgets.QMenu(self)
+        delete_action = context_menu.addAction("删除行")
+        delete_action.triggered.connect(self.delete_row)
+        add_action = context_menu.addAction("添加行")
+        add_action.triggered.connect(self.add_row)
+        context_menu.exec(event.globalPos())
+
+    def delete_row(self):
+        current_index = self.table.currentIndex()
+        if current_index.isValid():
+            self.table.model().removeRow(current_index.row())
+
+    def add_row(self):
+        model = self.table.model()
+        numbers = [model.item(i, 0).text() for i in range(model.rowCount())]
+        numbers = list(map(int, numbers))
+
+        next_number = 1
+        while next_number in numbers:
+            next_number += 1
+
+        new_row = [QtGui.QStandardItem(str(next_number))] + [QtGui.QStandardItem('') for _ in range(1, model.columnCount())]
+        model.appendRow(new_row)
+
+    def submit(self):
+        model = self.table.model()
+
+        data = []
+        for row in range(model.rowCount()):
+            rowData = []
+            for column in range(model.columnCount()):
+                item = model.item(row, column)
+                if item is not None:
+                    rowData.append(item.text())
                 else:
-                    rowData.append('')  # 否则在行数据列表中添加空字符串
-            data.append(rowData)  # 将行数据列表添加到数据列表
+                    rowData.append('')
+            data.append(rowData)
 
-        df = pd.DataFrame(data, columns=[model.horizontalHeaderItem(i).text() for i in range(model.columnCount())])  # 创建数据框
-        df.to_excel('your_file.xlsx', index=False)  # 将数据框写入Excel文件
+        df = pd.DataFrame(data, columns=[model.horizontalHeaderItem(i).text() for i in range(model.columnCount())])
+        df.to_excel('your_file.xlsx', index=False)
+
+    def exit_program(self):
+        sys.exit()
+
+class User_Weapon_Windows(QtWidgets.QMainWindow):
+    def __init__(self, parent=None):
+        super(User_Weapon_Windows, self).__init__(parent=parent)
+        self.resize(800, 450)
+        self.setWindowTitle('用户武器管理系统')
+        self.setObjectName("UserWeaponWidget")
 
 def show_main_window():
-    app = QtWidgets.QApplication(sys.argv)  # 创建Qt应用程序对象
-    main = MainWindow()  # 创建主窗口对象
-    main.show()  # 显示主窗口
-    sys.exit(app.exec())  # 运行应用程序并进入主事件循环
-    
-if __name__ == '__main__':  # 程序执行入口
-    import sys  # 导入sys模块
-    app = QtWidgets.QApplication(sys.argv)  # 创建Qt应用程序对象
-    main = MainWindow()  # 创建主窗口对象
-    main.show()  # 显示主窗口
-    sys.exit(app.exec())  # 运行应用程序并进入主事件循环
+    app = QtWidgets.QApplication(sys.argv)
+    main = MainWindow()
+    main.show()
+    sys.exit(app.exec())
+
+if __name__ == '__main__':
+    show_main_window()

@@ -22,3 +22,10 @@ class PlayerLoader:
             user_list["user"].append({"username": username, "password": password})
             user_json.seek(0)
             json.dump(user_list, user_json, indent=4)
+    def get_user_type(self, username):
+        # Get the user type of the player
+        with open('user_list.json', 'r') as user_json:
+            user_list = json.load(user_json)            
+            for user in user_list["user"]:
+                if user["username"] == username:
+                    return user["user_type"]
