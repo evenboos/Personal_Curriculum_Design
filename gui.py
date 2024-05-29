@@ -3,6 +3,7 @@ import pandas as pd
 import sys
 import qfluentwidgets as qfw
 from PyQt6.QtGui import QIcon
+from player_loader import PlayerLoader
 
 class MainWindow(qfw.FluentWindow):
     def __init__(self, parent=None):
@@ -10,7 +11,9 @@ class MainWindow(qfw.FluentWindow):
         self.resize(900, 700)
         self.setWindowTitle("PUBG武器管理系统")
         self.TableEditWidget = Table_Edit_Widget(self)
+        self.BulletSumViewWidget = BulletWindow(self)
         self.addSubInterface(self.TableEditWidget, qfw.FluentIcon.FOLDER, '全用户武器管理系统', qfw.NavigationItemPosition.SCROLL)
+        self.addSubInterface(BulletWindow(self.BulletSumViewWidget), qfw.FluentIcon.FOLDER, '剩余子弹数', qfw.NavigationItemPosition.SCROLL)
 
 class Table_Edit_Widget(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
@@ -107,13 +110,43 @@ class Table_Edit_Widget(QtWidgets.QMainWindow):
     def exit_program(self):
         sys.exit()
 
-class User_Weapon_Windows(QtWidgets.QMainWindow):
-    def __init__(self, parent=None):
-        super(User_Weapon_Windows, self).__init__(parent=parent)
-        self.resize(800, 450)
-        self.setWindowTitle('用户武器管理系统')
-        self.setObjectName("UserWeaponWidget")
+class BulletWindow(QtWidgets.QMainWindow):
+    def __init__(self,parent=None):
+        super().__init__(parent)
+        self.player_loader = PlayerLoader()
 
+        self.table = qfw.TableWidget(self)
+        self.table.setColumnCount(2)
+        self.table.setHorizontalHeaderLabels(["玩家名", "剩余子弹数"])
+        self.setObjectName("BulletSumViewWidget")
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(self.table)
+
+        widget = QtWidgets.QWidget()
+        widget.setLayout(layout)
+        self.setCentralWidget(widget)
+
+        self.setWindowTitle("剩余子弹数查看")
+        self.resize(400, 300)
+
+        self.load_data()
+
+    def load_data(self):
+        players = self.player_loader.get_all_players()
+        self.table.setRowCount(len(players))
+
+        for i, player in enumerate(players):
+            bullet_count = sum(weapon.magazines_capacity * weapon.magazines_amounts + weapon.rest_bullets for weapon in player.weapon_list)
+            
+            name_item = QtWidgets.QTableWidgetItem(player.name)
+            name_item.setFlags(QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled)
+            
+            bullet_count_item = QtWidgets.QTableWidgetItem(str(bullet_count))
+            bullet_count_item.setFlags(QtCore.Qt.ItemFlag.ItemIsSelectable | QtCore.Qt.ItemFlag.ItemIsEnabled)
+            
+            self.table.setItem(i, 0, name_item)
+            self.table.setItem(i, 1, bullet_count_item)
 def show_main_window():
     app = QtWidgets.QApplication(sys.argv)
     main = MainWindow()

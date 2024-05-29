@@ -1,1 +1,81 @@
-{"user": [{"username": "evenboos", "password": "test", "user_type": "admin", "weapon_list": [{"name": "AK47", "damage": 45, "magazines_capacity": 30, "magazines_amounts": 3, "firing_mode": "{single,auto}", "rest_bullets": 30}]}, {"username": "test_player", "user_type": "player", "password": "test", "weapon_list": [{"name": "M249", "damage": 40, "magazines_capacity": 50, "magazines_amounts": 4, "firing_mode": "{single, auto}", "rest_bullets": 15}, {"name": "AKM", "damage": 47, "magazines_capacity": 30, "magazines_amounts": 2, "firing_mode": "{single, auto}", "rest_bullets": 6}, {"name": "98K", "damage": 79, "magazines_capacity": 5, "magazines_amounts": 5, "firing_mode": "{single}", "rest_bullets": 4}]}, {"username": "123", "user_type": "player", "password": "123", "weapon_list": [{"name": "M416", "damage": 40, "magazines_capacity": 30, "magazines_amounts": 3, "firing_mode": "{single, auto}", "rest_bullets": 1}, {"name": "M16A4", "damage": 40, "magazines_capacity": 30, "magazines_amounts": 2, "firing_mode": "{single, auto}", "rest_bullets": 6}, {"name": "AUG", "damage": 41, "magazines_capacity": 30, "magazines_amounts": 2, "firing_mode": "{single, auto}", "rest_bullets": 6}]}]}
+{
+    "user": [
+        {
+            "username": "evenboos",
+            "password": "test",
+            "user_type": "admin",
+            "weapon_list": [
+                {
+                    "name": "AK47",
+                    "damage": 45,
+                    "magazines_capacity": 30,
+                    "magazines_amounts": 3,
+                    "firing_mode": "{single,auto}",
+                    "rest_bullets": 30
+                }
+            ]
+        },
+        {
+            "username": "test_player",
+            "user_type": "player",
+            "password": "test",
+            "weapon_list": [
+                {
+                    "name": "M249",
+                    "damage": 40,
+                    "magazines_capacity": 50,
+                    "magazines_amounts": 4,
+                    "firing_mode": "{single, auto}",
+                    "rest_bullets": 15
+                },
+                {
+                    "name": "AKM",
+                    "damage": 47,
+                    "magazines_capacity": 30,
+                    "magazines_amounts": 2,
+                    "firing_mode": "{single, auto}",
+                    "rest_bullets": 6
+                },
+                {
+                    "name": "98K",
+                    "damage": 79,
+                    "magazines_capacity": 5,
+                    "magazines_amounts": 5,
+                    "firing_mode": "{single}",
+                    "rest_bullets": 4
+                }
+            ]
+        },
+        {
+            "username": "123",
+            "user_type": "player",
+            "password": "123",
+            "weapon_list": [
+                {
+                    "name": "M416",
+                    "damage": 40,
+                    "magazines_capacity": 30,
+                    "magazines_amounts": 3,
+                    "firing_mode": "{single, auto}",
+                    "rest_bullets": 1
+                },
+                {
+                    "name": "M16A4",
+                    "damage": 40,
+                    "magazines_capacity": 30,
+                    "magazines_amounts": 2,
+                    "firing_mode": "{single, auto}",
+                    "rest_bullets": 6
+                },
+                {
+                    "name": "AUG",
+                    "damage": 41,
+                    "magazines_capacity": 30,
+                    "magazines_amounts": 2,
+                    "firing_mode": "{single, auto}",
+                    "rest_bullets": 6
+                }
+            ]
+        }
+    ]
+}
