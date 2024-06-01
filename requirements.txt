@@ -1,0 +1,5 @@
+python==3.8
+openpyxl
+PyQt6
+PyQt6-Fluent-Widgets
+pandas numpy
