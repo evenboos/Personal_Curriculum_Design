@@ -1,8 +1,9 @@
 # login_gui_system.py
 from PyQt6 import QtWidgets, QtCore, QtGui
-from player_loader import PlayerLoader
+from player_loader import PlayerLoader,Player
 import qfluentwidgets as qfw
 import random
+import hashlib
 import string
 
 class NullError(Exception):
@@ -11,6 +12,8 @@ class NullError(Exception):
 
 class LoginWindow(QtCore.QObject):
     login_success = QtCore.pyqtSignal()  # Define a new signal
+    register_error = QtCore.pyqtSignal(str, object)  # Define a new signal for register errors
+
 
     def __init__(self):
         super().__init__()  # Call the init method of the super class
@@ -18,26 +21,45 @@ class LoginWindow(QtCore.QObject):
         self.player_loader.load_players()
 
     def login(self, username, password):
-        if self.player_loader.get_player(username) == password:
+        player = self.player_loader.get_player(username)
+        if player and player.password == hashlib.sha256(password.encode()).hexdigest():  # Hash the input password and compare it with the stored hash
             self.login_success.emit()  # Emit the signal when login is successful
             return True
         
         return False
-
-    def register(self, username, password):
-            try:
-                if not username or not password:
-                    raise ValueError("用户名或密码不能为空")
-                if len(password) < 6:
-                    raise ValueError("密码长度必须至少为6位")
-                if not any(char.isdigit() for char in password) or not any(char.isalpha() for char in password):
-                    raise ValueError("密码必须包含至少一个数字和一个字母")
-                if self.player_loader.get_player(username):
-                    return False
-                self.player_loader.add_player(username, password)
+   
+    def register(self, username, password,register_dialog):
+        from login_gui_system import RegisterDialog
+        regiserdialog = RegisterDialog()
+        try:
+            if not username or not password:
+                raise ValueError("用户名或密码不能为空")
+            elif len(password) < 6:
+                raise ValueError("密码长度必须至少为6位")
+            elif not any(char.isdigit() for char in password) or not any(char.isalpha() for char in password):
+                raise ValueError("密码必须包含至少一个数字和一个字母")
+            elif self.player_loader.get_player(username):
+                raise ValueError("用户名已存在")
+            else:
+                hashed_password = hashlib.sha256(password.encode()).hexdigest()  # Hash the password
+                new_player = Player(username, hashed_password)  # Create a new Player object
+                self.player_loader.add_player(new_player)  # Pass the Player object to the add_player method
                 return True
-            except ValueError as e:
-                pass
+        except ValueError as e:
+            self.register_error.emit(str(e), register_dialog)  # Emit the signal with the error message and the RegisterDialog instance
+            return False
+    def showErrorMessage(self, content):
+        register_dialog = RegisterDialog()
+        qfw.TeachingTip.create(
+            target=register_dialog.register_button,  # Access the register_button attribute on the instance
+            icon=qfw.InfoBarIcon.ERROR,
+            title='错误！',
+            content=str(content),
+            isClosable=True,
+            tailPosition=qfw.TeachingTipTailPosition.BOTTOM,
+            duration=2000,
+            parent=register_dialog  # Use the RegisterDialog instance as the parent
+        )
 class RegisterDialog(QtWidgets.QDialog):
     registered = QtCore.pyqtSignal()  # Define a new signal
 
@@ -70,17 +92,16 @@ class RegisterDialog(QtWidgets.QDialog):
         # 注册用户的方法
         username = self.username_input.text()  # 获取输入的用户名
         password = self.password_input.text()  # 获取输入的密码
-        if self.login_system.register(username, password):  # 调用登录系统的注册方法
+        if self.login_system.register(username, password,RegisterDialog):  # 调用登录系统的注册方法
             QtWidgets.QMessageBox.information(self, 'Register', '注册成功！')  # 弹出注册成功的消息框
             self.registered.emit()  # 当注册成功时发射信号
             self.accept()  # 关闭注册窗口
         else:
-            self.register_button.clicked.connect(lambda: self.showErrorMessage('注册失败，用户名已存在！'))
-            #QtWidgets.QMessageBox.warning(self, 'Register', '注册失败，用户名已存在！')  # 弹出用户名已存在的警告框
-
-    def showErrorMessage(self,content):
+            # The error message is shown in the register method
+            pass
+    def showErrorMessage(self,content,target_button):
         qfw.TeachingTip.create(
-            target=self.register_button,
+            target=target_button,
             icon=qfw.InfoBarIcon.ERROR,
             title='错误！',
             content=str(content),
@@ -91,9 +112,11 @@ class RegisterDialog(QtWidgets.QDialog):
         )
 class LoginGuiSystem(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
+    
         super(LoginGuiSystem, self).__init__(parent)
         self.login_system = LoginWindow()
-        
+        #self.login_system.register_error.connect(self.show_register_error("注册失败，用户名或密码错误！",self.register_dialog))
+
         
         self.setWindowTitle('登录系统')
         self.setObjectName("Login_System")
@@ -151,27 +174,29 @@ class LoginGuiSystem(QtWidgets.QMainWindow):
         # 设置窗口的固定大小
         self.setFixedSize(self.reSize[0], self.reSize[1])
 
-
+    def show_register_error(self, message,register_dialog):
+        qfw.TeachingTip.create(
+            target=self.register_dialog.register_button,
+            icon=qfw.InfoBarIcon.ERROR,
+            title='错误！',
+            content=message,
+            isClosable=True,
+            tailPosition=qfw.TeachingTipTailPosition.BOTTOM,
+            duration=2000,
+            parent=self.register_dialog
+        )
     def login(self):
         username = self.username_input.text()
         password = self.password_input.text()
         if self.login_system.login(username, password):
             QtWidgets.QMessageBox.information(self, '登录', '登录成功！')
         else:
-            self.login_button.clicked.connect(lambda: self.showErrorMessage('登录失败，用户名或密码错误！'))
+            self.login_button.clicked.connect(lambda: self.showErrorMessage('登录失败，用户名或密码错误！',self.login_button))
             self.password_input.clear()  # 清空密码输入框
             self.generate_captcha()  # 重新生成验证码
-    def showErrorMessage(self,content):
-        qfw.TeachingTip.create(
-            target=self.register_button,
-            icon=qfw.InfoBarIcon.ERROR,
-            title='错误！',
-            content=str(content),
-            isClosable=True,
-            tailPosition=qfw.TeachingTipTailPosition.BOTTOM,
-            duration=2000,
-            parent=self
-        )
+    def show_register_error(self, message):
+        QtWidgets.QMessageBox.warning(None, "注册错误", message)  # Show the error message
+
 
     def show_register_dialog(self):
         self.register_dialog = RegisterDialog(self)

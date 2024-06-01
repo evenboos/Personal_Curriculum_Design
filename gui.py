@@ -13,7 +13,8 @@ class MainWindow(qfw.FluentWindow):
         self.TableEditWidget = Table_Edit_Widget(self)
         self.BulletSumViewWidget = BulletWindow(self)
         self.addSubInterface(self.TableEditWidget, qfw.FluentIcon.FOLDER, '全用户武器管理系统', qfw.NavigationItemPosition.SCROLL)
-        self.addSubInterface(BulletWindow(self.BulletSumViewWidget), qfw.FluentIcon.FOLDER, '剩余子弹数', qfw.NavigationItemPosition.SCROLL)
+        self.addSubInterface(BulletWindow(self.BulletSumViewWidget), qfw.FluentIcon.VIEW, '剩余子弹数', qfw.NavigationItemPosition.SCROLL)
+        self.addSubInterface(WeaponSelectionWindow(self.BulletSumViewWidget), qfw.FluentIcon.PEOPLE, '选择武器和开火模式', qfw.NavigationItemPosition.SCROLL)
 
 class Table_Edit_Widget(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
@@ -49,6 +50,9 @@ class Table_Edit_Widget(QtWidgets.QMainWindow):
 
         self.add_row_button = qfw.PrimaryPushButton(qfw.FluentIcon.ADD, '添加行', self)
         self.add_row_button.clicked.connect(self.add_row)
+        
+        self.delete_row_button = qfw.PrimaryPushButton(qfw.FluentIcon.DELETE, '删除行', self)
+        self.delete_row_button.clicked.connect(self.delete_row)
 
         self.exit_button = qfw.PrimaryPushButton(qfw.FluentIcon.CLOSE, '退出', self)
         self.exit_button.clicked.connect(self.exit_program)
@@ -58,6 +62,7 @@ class Table_Edit_Widget(QtWidgets.QMainWindow):
         self.layout.addWidget(self.table)
         self.layout.addWidget(self.button)
         self.layout.addWidget(self.add_row_button)
+        self.layout.addWidget(self.delete_row_button)
         self.layout.addWidget(self.exit_button)
 
         self.widget = QtWidgets.QWidget()
@@ -110,10 +115,14 @@ class Table_Edit_Widget(QtWidgets.QMainWindow):
     def exit_program(self):
         sys.exit()
 
+
+
 class BulletWindow(QtWidgets.QMainWindow):
+    
     def __init__(self,parent=None):
         super().__init__(parent)
         self.player_loader = PlayerLoader()
+        self.player_loader.load_players()  # Load player data
 
         self.table = qfw.TableWidget(self)
         self.table.setColumnCount(2)
@@ -147,6 +156,119 @@ class BulletWindow(QtWidgets.QMainWindow):
             
             self.table.setItem(i, 0, name_item)
             self.table.setItem(i, 1, bullet_count_item)
+            
+class WeaponSelectionWindow(QtWidgets.QMainWindow):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.player_loader = PlayerLoader()
+        self.player_loader.load_players()  # Load player data
+        self.setObjectName("WeaponSelectionWindow")
+
+        self.user_combo = qfw.ComboBox()
+        self.weapon_combo = qfw.ComboBox()
+        self.fire_mode_combo = qfw.ComboBox()
+        self.bullets_label = qfw.BodyLabel()
+
+        self.fire_button = qfw.PushButton("开火")
+        self.reload_button = qfw.PushButton("装填")
+
+        self.user_combo.currentIndexChanged.connect(self.load_data)
+        self.weapon_combo.currentIndexChanged.connect(self.update_fire_modes)
+        self.fire_button.clicked.connect(self.fire)
+        self.reload_button.clicked.connect(self.reload)
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(QtWidgets.QLabel("选择用户:"))
+        layout.addWidget(self.user_combo)
+        layout.addWidget(QtWidgets.QLabel("选择武器:"))
+        layout.addWidget(self.weapon_combo)
+        layout.addWidget(QtWidgets.QLabel("选择开火模式:"))
+        layout.addWidget(self.fire_mode_combo)
+        layout.addWidget(self.bullets_label)
+        layout.addWidget(self.fire_button)
+        layout.addWidget(self.reload_button)
+
+        widget = QtWidgets.QWidget()
+        widget.setLayout(layout)
+        self.setCentralWidget(widget)
+
+        self.setWindowTitle("选择武器和开火模式")
+        self.resize(400, 300)
+
+        self.load_users()
+
+    def load_users(self):
+        players = self.player_loader.get_all_players()
+        for player in players:
+            self.user_combo.addItem(player.name)
+
+    def load_data(self):
+        current_user_name = self.user_combo.currentText()
+        players = self.player_loader.get_all_players()
+        for player in players:
+            if player.name == current_user_name:
+                self.weapon_combo.clear()
+                for weapon in player.weapon_list:
+                    self.weapon_combo.addItem(weapon.name)
+
+    def update_fire_modes(self):
+        current_weapon_name = self.weapon_combo.currentText()
+        players = self.player_loader.get_all_players()
+        for player in players:
+            for weapon in player.weapon_list:
+                if weapon.name == current_weapon_name:
+                    self.fire_mode_combo.clear()
+                    self.fire_mode_combo.addItems(weapon.firing_mode)
+                    self.update_bullets_label()  # 在切换武器时更新剩余弹药
+                    break
+    def update_bullets_label(self):
+        current_user_name = self.user_combo.currentText()
+        current_weapon_name = self.weapon_combo.currentText()
+        players = self.player_loader.get_all_players()
+        for player in players:
+            if player.name == current_user_name:
+                for weapon in player.weapon_list:
+                    if weapon.name == current_weapon_name:
+                        self.bullets_label.setText(f"剩余弹药: {weapon.rest_bullets}")
+                        break
+
+    def fire(self):
+        current_user_name = self.user_combo.currentText()
+        current_weapon_name = self.weapon_combo.currentText()
+        players = self.player_loader.get_all_players()
+        for player in players:
+            if player.name == current_user_name:
+                for weapon in player.weapon_list:
+                    if weapon.name == current_weapon_name:
+                        if weapon.rest_bullets > 0:
+                            if weapon.firing_mode[self.fire_mode_combo.currentIndex()] == "auto":
+                                weapon.rest_bullets -= 2
+                                self.update_bullets_label()
+                            elif weapon.firing_mode[self.fire_mode_combo.currentIndex()] == "semi-auto":
+                                weapon.rest_bullets -= 1
+                                self.update_bullets_label()
+                            elif weapon.firing_mode[self.fire_mode_combo.currentIndex()] == "triple":
+                                weapon.rest_bullets -= 3
+                                self.update_bullets_label()
+                            elif weapon.firing_mode[self.fire_mode_combo.currentIndex()] == "burst":
+                                weapon.rest_bullets -= 10
+                                self.update_bullets_label()
+                            
+                        else:
+                            QtWidgets.QMessageBox.warning(self, "警告", "子弹已用完，请装填！")
+                        break
+
+    def reload(self):
+        current_user_name = self.user_combo.currentText()
+        current_weapon_name = self.weapon_combo.currentText()
+        players = self.player_loader.get_all_players()
+        for player in players:
+            if player.name == current_user_name:
+                for weapon in player.weapon_list:
+                    if weapon.name == current_weapon_name:
+                        weapon.rest_bullets = weapon.magazines_capacity
+                        self.update_bullets_label()
+                        break
 def show_main_window():
     app = QtWidgets.QApplication(sys.argv)
     main = MainWindow()
